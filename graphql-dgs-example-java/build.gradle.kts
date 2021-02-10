@@ -15,14 +15,30 @@
  */
 
 plugins {
+    application
     kotlin("jvm")
+    id("org.springframework.boot") version "2.4.2"
 }
 
+application {
+    mainClass.set("com.netflix.graphql.dgs.example.ExampleApp")
+}
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web")
     implementation(project(":graphql-dgs-spring-boot-starter"))
     implementation(project(":graphql-dgs-subscriptions-websockets-autoconfigure"))
+    implementation(project(":graphql-dgs-spring-boot-micrometer"))
+
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
+    implementation("io.micrometer:micrometer-core")
 
     implementation("io.projectreactor:reactor-core:3.4.0")
+}
+
+// Disable Spring Boot Layering
+tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    layered {
+        isEnabled = false
+    }
 }

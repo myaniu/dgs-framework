@@ -68,8 +68,12 @@ class DgsRestController(private val schemaProvider: DgsSchemaProvider, private v
     val logger: Logger = LoggerFactory.getLogger(DgsRestController::class.java)
 
     @RequestMapping("/graphql", produces = ["application/json"])
-    fun graphql(@RequestBody body: String?, @RequestParam fileParams: Map<String, MultipartFile>?, @RequestParam(name="operations") operation: String?,
-                    @RequestParam(name="map") mapParam:String?, @RequestHeader headers: HttpHeaders): ResponseEntity<String> {
+    fun graphql(@RequestBody body: String?,
+                @RequestParam fileParams: Map<String, MultipartFile>?,
+                @RequestParam(name="operations") operation: String?,
+                @RequestParam(name="map") mapParam:String?,
+                @RequestHeader headers: HttpHeaders
+    ): ResponseEntity<String> {
 
         logger.debug("Starting /graphql handling")
 
@@ -163,11 +167,9 @@ class DgsRestController(private val schemaProvider: DgsSchemaProvider, private v
         val graphQLSchema: GraphQLSchema = schemaProvider.schema()
         val graphQL = GraphQL.newGraphQL(graphQLSchema).build()
 
-        val executionInput: ExecutionInput = ExecutionInput.newExecutionInput().query(IntrospectionQuery.INTROSPECTION_QUERY)
-                .build()
+        val executionInput: ExecutionInput = ExecutionInput.newExecutionInput().query(IntrospectionQuery.INTROSPECTION_QUERY).build()
         val execute: ExecutionResult = graphQL.execute(executionInput)
 
         return mapper.writeValueAsString(execute.toSpecification())
-
     }
 }

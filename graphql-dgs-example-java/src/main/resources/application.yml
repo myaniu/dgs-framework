@@ -1,3 +1,18 @@
 spring:
   application:
     name: dgs-example
+
+# The Simple Metrics Registry should only be used for local development.
+# This could be done by leveraging Spring Boot Profiles, let's say your
+# local development profile is called `laptop`.  You can provide a profile
+# as follows...
+#---
+#spring:
+#  profiles:
+#    active: laptop
+
+management:
+  metrics:
+    export:
+      simple:
+        enabled: true

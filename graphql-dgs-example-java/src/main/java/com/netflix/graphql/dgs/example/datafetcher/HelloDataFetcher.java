@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 
 @DgsComponent
 public class HelloDataFetcher {
+
     @DgsData(parentType = "Query", field = "hello")
     @DgsEnableDataFetcherInstrumentation(false)
     public String hello(@InputArgument("name") String name) {

@@ -20,11 +20,17 @@ plugins {
 
 
 dependencies {
-    api(project(":graphql-dgs"))
-    api(project(":graphql-dgs-spring-webmvc"))
-    implementation("org.springframework.boot:spring-boot-starter")
-    implementation("org.springframework:spring-web")
+    compileOnly(project(":graphql-dgs"))
+    compileOnly("org.springframework.boot:spring-boot-starter")
 
-    testImplementation("io.mockk:mockk:1.10.3-jdk8")
+    compileOnly("io.micrometer:micrometer-core")
+    compileOnly("org.springframework.boot:spring-boot-actuator-autoconfigure")
+
+    testImplementation(project(":graphql-dgs"))
+    testImplementation("org.springframework.boot:spring-boot-starter")
+    testImplementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+
+    testImplementation("io.micrometer:micrometer-core")
+    testImplementation("io.mockk:mockk:1.10.3-jdk8")
 }

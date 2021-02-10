@@ -166,23 +166,26 @@ class DgsSchemaProvider(private val applicationContext: ApplicationContext,
                         logger.error("Parent type ${dgsDataAnnotation.parentType} not found, but it was referenced in ${javaClass.name} in @DgsData annotation for field ${dgsDataAnnotation.field}")
                         throw InvalidDgsConfigurationException("Parent type ${dgsDataAnnotation.parentType} not found, but it was referenced on ${javaClass.name} in @DgsData annotation for field ${dgsDataAnnotation.field}")
                     }
-                    val type = typeDefinitionRegistry.getType(dgsDataAnnotation.parentType).get()
-                    if (type is InterfaceTypeDefinition) {
-                        val implementationsOf = typeDefinitionRegistry.getImplementationsOf(type)
-                        implementationsOf.forEach { implType ->
-                            val dataFetcher = createBasicDataFetcher(method, dgsComponent)
-                            codeRegistryBuilder.dataFetcher(FieldCoordinates.coordinates(implType.name, dgsDataAnnotation.field), dataFetcher)
-                            dataFetcherInstrumentationEnabled["${implType.name}.${dgsDataAnnotation.field}"] = enableInstrumentation
+                    when (val type = typeDefinitionRegistry.getType(dgsDataAnnotation.parentType).get()) {
+                        is InterfaceTypeDefinition -> {
+                            val implementationsOf = typeDefinitionRegistry.getImplementationsOf(type)
+                            implementationsOf.forEach { implType ->
+                                val dataFetcher = createBasicDataFetcher(method, dgsComponent)
+                                codeRegistryBuilder.dataFetcher(FieldCoordinates.coordinates(implType.name, dgsDataAnnotation.field), dataFetcher)
+                                dataFetcherInstrumentationEnabled["${implType.name}.${dgsDataAnnotation.field}"] = enableInstrumentation
+                            }
                         }
-                    } else if (type is UnionTypeDefinition) {
-                        type.memberTypes.filterIsInstance<TypeName>().forEach { memberType ->
-                            val dataFetcher = createBasicDataFetcher(method, dgsComponent)
-                            codeRegistryBuilder.dataFetcher(FieldCoordinates.coordinates(memberType.name, dgsDataAnnotation.field), dataFetcher)
-                            dataFetcherInstrumentationEnabled["${memberType.name}.${dgsDataAnnotation.field}"] = enableInstrumentation
+                        is UnionTypeDefinition -> {
+                            type.memberTypes.filterIsInstance<TypeName>().forEach { memberType ->
+                                val dataFetcher = createBasicDataFetcher(method, dgsComponent)
+                                codeRegistryBuilder.dataFetcher(FieldCoordinates.coordinates(memberType.name, dgsDataAnnotation.field), dataFetcher)
+                                dataFetcherInstrumentationEnabled["${memberType.name}.${dgsDataAnnotation.field}"] = enableInstrumentation
+                            }
                         }
-                    } else {
-                        val dataFetcher = createBasicDataFetcher(method, dgsComponent)
-                        codeRegistryBuilder.dataFetcher(FieldCoordinates.coordinates(dgsDataAnnotation.parentType, dgsDataAnnotation.field), dataFetcher)
+                        else -> {
+                            val dataFetcher = createBasicDataFetcher(method, dgsComponent)
+                            codeRegistryBuilder.dataFetcher(FieldCoordinates.coordinates(dgsDataAnnotation.parentType, dgsDataAnnotation.field), dataFetcher)
+                        }
                     }
                 } catch (ex: Exception) {
                     logger.error("Invalid parent type " + dgsDataAnnotation.parentType)

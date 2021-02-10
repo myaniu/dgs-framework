@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2021 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-plugins {
-    kotlin("jvm")
-}
 
+package com.netflix.graphql.dgs.metrics.micrometer
 
-dependencies {
-    api(project(":graphql-dgs"))
-    api(project(":graphql-dgs-spring-webmvc"))
-    implementation("org.springframework.boot:spring-boot-starter")
-    implementation("org.springframework:spring-web")
+import graphql.ExecutionResult
+import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters
+import io.micrometer.core.instrument.Tag
 
-    testImplementation("io.mockk:mockk:1.10.3-jdk8")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+@FunctionalInterface
+interface GraphQLTagsProvider {
+
+    fun getTags(parameters: InstrumentationExecutionParameters,
+                result: ExecutionResult,
+                exception: Throwable?): Iterable<Tag>
 }
