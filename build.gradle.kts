@@ -54,6 +54,12 @@ allprojects {
         }
     }
 
+    configurations.all {
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-reflect:${Versions.KOTLIN_VERSON}")
+        }
+    }
+
     dependencyRecommendations {
         mavenBom(mapOf(Pair("module","org.springframework:spring-framework-bom:${Versions.SPRING_VERSION}")))
         mavenBom(mapOf(Pair("module","org.springframework.boot:spring-boot-dependencies:${Versions.SPRING_BOOT_VERSION}")))
@@ -62,13 +68,23 @@ allprojects {
     }
 
     dependencies {
+        //Speed up processing of AutoConfig's produced by Spring Boot Netflix
+        annotationProcessor("org.springframework.boot:spring-boot-autoconfigure-processor")
+        //Produce Config Metadata for properties used in Spring Boot Netflix
+        annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+
         testImplementation("org.springframework.boot:spring-boot-starter-test") {
             exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
         }
     }
+
     java {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    tasks.withType<JavaCompile>().configureEach {
+        dependsOn(tasks.processResources)
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
@@ -82,9 +98,4 @@ allprojects {
         useJUnitPlatform()
     }
 
-    configurations.all {
-        resolutionStrategy {
-            force("org.jetbrains.kotlin:kotlin-reflect:${Versions.KOTLIN_VERSON}")
-        }
-    }
 }
