@@ -1,7 +1,7 @@
 /*
  * Copyright 2021 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -17,19 +17,19 @@
 package com.netflix.graphql.dgs.metrics.micrometer
 
 import com.netflix.graphql.dgs.metrics.micrometer.InstrumentationTags.sanitizeErrorPathsForTags
-import graphql.ExecutionResult;
-import graphql.execution.instrumentation.InstrumentationContext;
-import graphql.execution.instrumentation.InstrumentationState;
-import graphql.execution.instrumentation.SimpleInstrumentation;
-import graphql.execution.instrumentation.SimpleInstrumentationContext;
-import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
+import graphql.ExecutionResult
+import graphql.execution.instrumentation.InstrumentationContext
+import graphql.execution.instrumentation.InstrumentationState
+import graphql.execution.instrumentation.SimpleInstrumentation
+import graphql.execution.instrumentation.SimpleInstrumentationContext
+import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters
 import graphql.schema.DataFetcher
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Tags
+import io.micrometer.core.instrument.Timer
 
-import org.springframework.boot.actuate.metrics.AutoTimer;
+import org.springframework.boot.actuate.metrics.AutoTimer
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
@@ -49,44 +49,48 @@ class GraphQLMetricsInstrumentation(
 
         return object : SimpleInstrumentationContext<ExecutionResult>() {
             override fun onCompleted(result: ExecutionResult, exc: Throwable?) {
-                val tags: Iterable<Tag> = tagsProvider.getTags(parameters, result, exc)
-                state.stopTimer(autoTimer.builder("graphql.query").tags(tags))
+                state.stopTimer(autoTimer.builder("gql.query")
+                        .tags(tagsProvider.getTags(parameters, result, exc))
+                        .tags(tagsProvider.getEnvironmentTags()))
             }
         }
     }
 
     override fun instrumentExecutionResult(executionResult: ExecutionResult, parameters: InstrumentationExecutionParameters): CompletableFuture<ExecutionResult> {
         sanitizeErrorPathsForTags(executionResult).forEach { _ ->
-            registry.counter("gql.error", tagsProvider.getTags(parameters, executionResult, null)).increment()
+            registry.counter("gql.error",
+                    Tags.of(tagsProvider.getEnvironmentTags()).and(tagsProvider.getTags(parameters, executionResult, null)))
+                    .increment()
         }
         return CompletableFuture.completedFuture(executionResult)
     }
 
     override fun instrumentDataFetcher(dataFetcher: DataFetcher<*>, parameters: InstrumentationFieldFetchParameters): DataFetcher<*> {
-        val tag = InstrumentationTags.findDataFetcherTag(parameters)
-        if (parameters.isTrivialDataFetcher || InstrumentationTags.shouldIgnored(tag)) {
+        val gqlField = InstrumentationTags.findDataFetcherTag(parameters)
+        if (parameters.isTrivialDataFetcher || InstrumentationTags.shouldIgnored(gqlField)) {
             return dataFetcher
         }
 
         return DataFetcher { environment ->
-            registry.counter("gql.resolver.count", "gql.field", tag).increment()
-            autoTimer.builder("gql.resolver.time")
+            val tags = Tags.of("gql.field", gqlField).and(tagsProvider.getTags(parameters)).and(tagsProvider.getEnvironmentTags())
+            registry.counter("gql.resolver.count", tags).increment()
 
             val sampler = Timer.start(registry)
             val result = dataFetcher.get(environment)
             if (result is CompletableFuture<*>) {
                 result.thenAccept {
-                    recordDataFetcherTime(sampler, tag, registry)
+                    recordDataFetcherTime(sampler, tags, registry)
                 }
             } else {
-                recordDataFetcherTime(sampler, tag, registry)
+                recordDataFetcherTime(sampler, tags, registry)
             }
             result
         }
     }
 
-    private fun recordDataFetcherTime(timerSampler: Timer.Sample, gqlField: String, registry: MeterRegistry) {
-        timerSampler.stop(registry, Timer.builder("gql.resolver.time").tags("gql.field", gqlField).publishPercentileHistogram())
+    private fun recordDataFetcherTime(timerSampler: Timer.Sample, tags: Tags, registry: MeterRegistry) {
+        timerSampler.stop(registry,
+                Timer.builder("gql.resolver.time").tags(tags).publishPercentileHistogram())
     }
 
     class MetricsInstrumentationState(private val registry: MeterRegistry) : InstrumentationState {

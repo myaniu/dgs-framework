@@ -19,12 +19,17 @@ package com.netflix.graphql.dgs.metrics.micrometer
 
 import graphql.ExecutionResult
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters
+import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters
 import io.micrometer.core.instrument.Tag
+import io.micrometer.core.instrument.Tags
 
-@FunctionalInterface
 interface GraphQLTagsProvider {
+
+    fun getEnvironmentTags(): Iterable<Tag> = Tags.empty()
 
     fun getTags(parameters: InstrumentationExecutionParameters,
                 result: ExecutionResult,
-                exception: Throwable?): Iterable<Tag>
+                exception: Throwable?): Iterable<Tag> = Tags.empty()
+
+    fun getTags(parameters: InstrumentationFieldFetchParameters): Iterable<Tag> = Tags.empty()
 }
